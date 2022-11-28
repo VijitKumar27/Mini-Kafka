@@ -3,6 +3,7 @@ import threading
 #import wikipedia
 import json
 import os
+import shutil
 
 IP = socket.gethostbyname(socket.gethostname())
 PORT = 5566
@@ -36,9 +37,11 @@ def handle_producer(conn, addr):
             if item not in lst:
                 lst.append(item)
             f.write(str(lst))
-
-        if not os.path.exists(item):
-            os.mkdir(item)
+        
+            # os.mkdir("Topics")
+            # y = "Topics/" + item
+            if not os.path.exists(item):
+                os.mkdir(item)
             ##os.mkdir(item)
 
     for key, value in data.items():
@@ -46,7 +49,13 @@ def handle_producer(conn, addr):
         with open(x, 'a') as f:
             f.write(str(value))
     # #msg = wikipedia.summary(msg, sentences=1)
-    
+    src=r"C:\Users\Vibhav\Desktop\BDD"
+    dest1=r"C:\Users\Vibhav\Desktop\BDD\brokera"
+    dest2=r"C:\Users\Vibhav\Desktop\BDD\brokerb"
+    dest3=r"C:\Users\Vibhav\Desktop\BDD\brokerc"
+    shutil.copytree(src,dest1)
+    shutil.copytree(dest1,dest2)
+    shutil.copytree(dest2,dest3)   
 
     #conn.close()
 
