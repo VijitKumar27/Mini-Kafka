@@ -1,29 +1,45 @@
-#import broker1,broker2,broker3
-import json
 import socket
+import json
 
-while(1):
-    print("Enter topic name: ")
-    topic = input()
-    print("Enter the desired message:")
-    msg = input()
+IP = socket.gethostbyname(socket.gethostname())
+PORT = 5566
+ADDR = (IP, PORT)
+SIZE = 1024
+FORMAT = "utf-8"
+DISCONNECT_MSG = "!DISCONNECT"
 
-    data = {topic:msg}
+def main():
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(ADDR)
+    print(f"[CONNECTED] Client connected to server at {IP}:{PORT}")
 
+    connected = True
+    while connected:
+        print("Enter topic name: ")
+        topic = input()
+        print("Enter the desired message:")
+        msg = input()
 
-    data = json.dumps(data) #serialising
+        data = {topic:msg}
 
-    clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
-    clientSocket.connect(("127.0.0.1",9090));
+        data = json.dumps(data) #serialising
+    
+        message = "1"
+        client.send(message.encode())
 
-    #print(data)
+        if msg == DISCONNECT_MSG:
+            connected = False
+        else:
+            msg = client.recv(SIZE).decode(FORMAT)
+            print(f"[SERVER] {msg}")
 
-    clientSocket.send(data.encode());
+        client.send(data.encode())
 
-#broker1.func(data)   
+        if msg == DISCONNECT_MSG:
+            connected = False
+        else:
+            msg = client.recv(SIZE).decode(FORMAT)
+            print(f"[SERVER] {msg}")
 
-# dataFromServer = clientSocket.recv(1024);
-
-# print(dataFromServer.decode());
-
-
+if __name__ == "__main__":
+    main()
