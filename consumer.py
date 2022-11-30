@@ -1,6 +1,3 @@
-# print("enter topic name:")
-# topic=input()
-    
 import socket
 #import json
 
@@ -30,6 +27,8 @@ def main():
             msg = client.recv(SIZE).decode(FORMAT)
             print(f"[SERVER] {msg}")
 
+        # print("Enter topic name: ")
+        # topic=input()
         client.send(topic.encode())
 
         if msg == DISCONNECT_MSG:
