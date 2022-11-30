@@ -40,24 +40,29 @@ def handle_producer(conn, addr):
         
             # os.mkdir("Topics")
             # y = "Topics/" + item
-            if not os.path.exists(item):
-                os.mkdir(item)
+            if not os.path.exists('brokera/'+item):
+                os.mkdir('brokera/'+item)
             ##os.mkdir(item)
 
     for key, value in data.items():
-        x=key+"/d"
+        x="brokera/"+key+"/d"
         with open(x, 'a') as f:
             f.write(str(value))
-    # #msg = wikipedia.summary(msg, sentences=1)
-    src=r"C:\Users\Vibhav\Desktop\BDD"
-    dest1=r"C:\Users\Vibhav\Desktop\BDD\brokera"
-    dest2=r"C:\Users\Vibhav\Desktop\BDD\brokerb"
-    dest3=r"C:\Users\Vibhav\Desktop\BDD\brokerc"
-    shutil.copytree(src,dest1)
-    shutil.copytree(dest1,dest2)
-    shutil.copytree(dest2,dest3)   
+    
+    #REPLICATION
+    if os.path.exists('brokerb'):
+        shutil.rmtree('brokerb')
+    if os.path.exists('brokerc'):
+        shutil.rmtree('brokerc')
 
-    #conn.close()
+    src=r"brokera"
+    dest1=r"brokerb"
+    dest2=r"brokerc"
+    
+    shutil.copytree(src,dest1)
+    shutil.copytree(src,dest2)   
+
+
 
 def handle_consumer(conn, addr):
     
@@ -65,10 +70,6 @@ def handle_consumer(conn, addr):
     conn.send(msg.encode(FORMAT))
 
     topic = conn.recv(SIZE).decode(FORMAT)
-    #data = json.loads(data)
-        # if msg == DISCONNECT_MSG:
-        #     connected = False
-
     print(f"[{addr}] {topic}")
     
     with open('topics.txt','a+') as f: #global list of topics
@@ -78,19 +79,36 @@ def handle_consumer(conn, addr):
         if topic not in lst:
             lst.append(topic)
         f.write(str(lst))
-    if not os.path.exists(topic):
-        os.mkdir(topic)
+    #if topic doesnt exist, create one
+    if not os.path.exists("brokera/"+topic):
+        os.mkdir("brokera/"+topic)
+        x="brokera/"+topic+"/d"
+        value=" "
+        with open(x, 'a') as f:
+            f.write(value)
+    
+
+        #REPLICATION
+        if os.path.exists('brokerb'):
+            shutil.rmtree('brokerb')
+        if os.path.exists('brokerc'):
+            shutil.rmtree('brokerc')
+
+        src=r"brokera"
+        dest1=r"brokerb"
+        dest2=r"brokerc"
+
+        shutil.copytree(src,dest1)
+        shutil.copytree(src,dest2) 
+
 
         
-    x=topic+"/d"
+    x="brokera/"+topic+"/d"
     with open(x, 'a') as f:
         f.write('')
     with open(x, 'r') as f:
         res=f.read()
         conn.send(res.encode(FORMAT))
-    
-
-    #conn.close()
             
 
 def handle_client(conn, addr):
