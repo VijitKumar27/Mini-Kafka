@@ -1,62 +1,159 @@
-import os
-import sys
-import consumer
 import socket
+import threading
+#import wikipedia
 import json
+import os
+import shutil
 
-serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+IP = socket.gethostbyname(socket.gethostname())
+PORT = 5566
+ADDR = (IP, PORT)
+SIZE = 1024
+FORMAT = "utf-8"
+DISCONNECT_MSG = "!DISCONNECT"
 
-serverSocket.bind(("127.0.0.1",9090));
+def handle_producer(conn, addr):
 
-serverSocket.listen();
+    msg = "I reached publisher function"
+    conn.send(msg.encode(FORMAT))
 
-while(True):
+    data = conn.recv(SIZE).decode(FORMAT)
+    data = json.loads(data)
+        # if msg == DISCONNECT_MSG:
+        #     connected = False
+    msg2 = "Published successfully"
+    conn.send(msg2.encode(FORMAT))
 
-    (clientConnected, clientAddress) = serverSocket.accept();
+    print(f"[{addr}] {data}")
+    
 
-    print("Accepted a connection request from %s:%s"%(clientAddress[0], clientAddress[1]));
-    data = clientConnected.recv(1024)
-    data = json.loads(data) #deserialisng
-    #clientConnected.send("Topic published successfully".encode());
-
- 
-   
-    #creating directories for each topic
     for item in data.keys():
 
         #check if topic exists, only then write topic
-        with open('topics.txt','a+') as f: #global list of topics
-            f.write(str([]))
-            lst=f.read()
-            lst=list(lst)
-            if item not in lst:
-                lst.append(item)
-            f.write(str(lst))
-
-        if not os.path.exists(item):
-            os.mkdir(item)
-        ##os.mkdir(item)
-
-    for key, value in data.items():
-        x=key+"/d"
-        with open(x, 'a') as f:
-            f.write(str(value))
-    
+        # with open('topics.txt','a+') as f: #global list of topics
+        #     f.write(str([]))
+        #     lst=f.read()
+        #     lst=list(lst)
+        #     if item not in lst:
+        #         lst.append(item)
+        #     f.write(str(lst))
         
-# def accept(topic):  #we get the request here
-#     with open('topics.txt','a+') as f: #global list of topics
-#         f.write(str([]))
-#         lst=f.read()
-#         lst=list(lst)
-#         if topic not in lst:
-#             lst.append(topic)
-#         f.write(str(lst))
-#     if not os.path.exists(topic):
-#         os.mkdir(topic)
+            # os.mkdir("Topics")
+            # y = "Topics/" + item
+        if not os.path.exists('brokera/'+item):
+            os.mkdir('brokera/'+item)
+            ##os.mkdir(item)
+    
+    #PARTITIONING: writing each message to a different file in the topic
+    i = 0
+    while os.path.exists("d%s" % i):
+        i += 1
+        for key, value in data.items():
+            x="brokera/"+key+"/d"+str(i)
+            with open(x, 'a') as f:
+                f.write(str(value))
+    
 
-#     x=topic+"/d"
-#     with open(x, 'a') as f:
-#         f.write('')
-#     with open(x, 'r') as f:
-#         res=f.read()
-#     consumer.foo(res)
+
+    # for key, value in data.items():
+    #     x="brokera/"+key+"/d"
+    #     with open(x, 'a') as f:
+    #         f.write(str(value))
+    
+    #REPLICATION
+
+    if os.path.exists('brokerb'):
+        shutil.rmtree('brokerb')
+    if os.path.exists('brokerc'):
+        shutil.rmtree('brokerc')
+
+    src=r"brokera"
+    dest1=r"brokerb"
+    dest2=r"brokerc"
+    
+    shutil.copytree(src,dest1)
+    shutil.copytree(src,dest2)   
+
+
+
+def handle_consumer(conn, addr):
+    
+    msg = "I reached consumer function"
+    conn.send(msg.encode(FORMAT))
+
+    topic = conn.recv(SIZE).decode(FORMAT)
+    print(f"[{addr}] {topic}")
+    
+    # with open('topics.txt','a+') as f: #global list of topics
+    #     f.write(str([]))
+    #     lst=f.read()
+    #     lst=list(lst)
+    #     if topic not in lst:
+    #         lst.append(topic)
+    #     f.write(str(lst))
+    #if topic doesnt exist, create one
+    if not os.path.exists("brokera/"+topic):
+        os.mkdir("brokera/"+topic)
+        i = 0
+        while os.path.exists("d%s" % i):
+            i += 1
+        x="brokera/"+topic+"/d"+str(i)
+        value=" "
+        with open(x, 'a') as f:
+            f.write(value)
+    
+        #REPLICATION
+        if os.path.exists('brokerb'):
+            shutil.rmtree('brokerb')
+        if os.path.exists('brokerc'):
+            shutil.rmtree('brokerc')
+
+        src=r"brokera"
+        dest1=r"brokerb"
+        dest2=r"brokerc"
+
+        shutil.copytree(src,dest1)
+        shutil.copytree(src,dest2) 
+
+
+    for filename in os.listdir("brokera"):
+        f1=os.path.join("brokera",filename)
+        if os.path.isfile(f1):
+            #x="brokera/"+topic+"/d"
+            with open(f1, 'a') as f:
+                f.write('')
+            with open(f1, 'r') as f:
+                res=f.read()
+                conn.send(res.encode(FORMAT))
+                    
+
+def handle_client(conn, addr):
+    print(f"[NEW CONNECTION] {addr} connected.")
+
+    connected = True
+    while connected:
+        check = conn.recv(SIZE).decode(FORMAT)
+        
+        if(check == "1"):
+            handle_producer(conn, addr)
+
+        if(check == "2"):
+            handle_consumer(conn, addr)
+    conn.close()
+        
+
+def main():
+    print("[STARTING] Server is starting...")
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(ADDR)
+    server.listen()
+    print(f"[LISTENING] Server is listening on {IP}:{PORT}")
+
+    while True:
+        conn, addr = server.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+
+if __name__ == "__main__":
+    main()
