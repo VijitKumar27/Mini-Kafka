@@ -16,4 +16,4 @@ def accept(topic):  #we get the request here
         f.write('')
     with open(x, 'r') as f:
         res=f.read()
-    consumer.foo(res)
+    #consumer.foo(res)

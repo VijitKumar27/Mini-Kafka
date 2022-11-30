@@ -34,7 +34,8 @@ def handle_producer(conn, addr):
         #     f.write(str([]))
         #     lst=f.read()
         #     lst=list(lst)
-        #     if item not in lst:
+        #     if item not in lst
+
         #         lst.append(item)
         #     f.write(str(lst))
         

@@ -24,12 +24,18 @@ def handle_producer(conn, addr):
     
 
 def handle_consumer(conn, addr):
+
+    msg = "Reached handle_consumer"
+    conn.send(msg.encode(FORMAT))
+    print("Waiting to send")
+
     l = []
     for key, items in d.items():
         if((d[key][1] == 1) or (d[key][1] == 0)):
             l.append(d[key][0])   
                 
-    msg = json.dump(l)
+    #msg = json.dump(l)
+    msg = "HI"
     conn.send(msg.encode(FORMAT))
 
 def handle_broker(conn, addr):
@@ -43,15 +49,14 @@ def handle_broker(conn, addr):
         print ('port CLOSED, connect_ex returned: '+str(result))
     
 
-    
-  
-
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
 
     connected = True
     while connected:
         check = conn.recv(SIZE).decode(FORMAT)
+
+        
         
         if(check == "1"):
             handle_producer(conn, addr)

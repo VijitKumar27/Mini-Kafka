@@ -76,6 +76,8 @@ def main():
 
                 print(f"[Zookeeper] {message}")
 
+                
+
             broker(int(message))
             #connected = False
         
