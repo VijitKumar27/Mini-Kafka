@@ -3,6 +3,8 @@ import json
 import threading
 from time import sleep
 import sys
+import random
+from datetime import datetime
 
 IP = socket.gethostbyname(socket.gethostname())
 
@@ -25,6 +27,7 @@ if(check == "--from-beginning"):
     flag = 1
 
 def main():
+    timestamp1= str((datetime.now().strftime('%H:%M:%S')))
     
     def broker(port_no):
         ADDR = (IP, port_no)
@@ -49,12 +52,22 @@ def main():
                 msg = client2.recv(SIZE).decode(FORMAT)
                 print(f"[BROKER] {msg}")
 
-            client2.send(topic.encode())
-
+            print("check4")
+            #timestamp1= str((datetime.now().strftime('%H:%M:%S')))
+            dict3 = {topic:[timestamp1,flag]}
+            print(dict3)
+            print(type(dict3))
+            dict3 = json.dumps(dict3)
+            # y = "Hi"
+            print("check3")
+            client2.send(dict3.encode())
+            print("check2")
             if msg == DISCONNECT_MSG:
                 connected = False
             else:
+                print("check")
                 msg = client2.recv(SIZE).decode(FORMAT)
+                msg = json.loads(msg)
                 print(f"[BROKER] {msg}")
             sleep(10)
             zookeeper()
@@ -87,15 +100,20 @@ def main():
             if message == DISCONNECT_MSG:
                 connected = False
             else:
-                message = client.recv(SIZE).decode(FORMAT)
+                # message = client.recv(SIZE).decode(FORMAT)
                 # # print("Waiting for reply2")
-                # data = client.recv(SIZE).decode(FORMAT)
-                # data = json.loads(data)
-                print(f"[Zookeeper] {message}")
+                data = client.recv(SIZE).decode(FORMAT)
+                data = json.loads(data)
+                print(f"[Zookeeper] {data}")
+
+            l = []
+            for key, value in data.items():
+                l.append(int(value))
 
             
-            #print(data)
-            broker(6677)
+            rand = random.randint(0, len(l)-1)
+            broker(l[0], )
+
             #connected = False
         
         #client.send(data.encode())

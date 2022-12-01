@@ -12,7 +12,7 @@ SIZE = 1024
 FORMAT = "utf-8"
 DISCONNECT_MSG = "!DISCONNECT"
 
-d = {1: [5566,0], 2:[6677,1], 3: [7788,0]}
+d = {1: [5566,1], 2:[6677,0], 3: [7788,0]}
 
 def handle_producer(conn, addr):
     for key, items in d.items():
@@ -29,14 +29,16 @@ def handle_consumer(conn, addr):
     conn.send(msg.encode(FORMAT))
     print("Waiting to send")
 
-    l = []
+    dict2 = {}
     for key, items in d.items():
         if((d[key][1] == 1) or (d[key][1] == 0)):
-            l.append(d[key][0])   
+            dict2[key] = d[key][0] 
+            # print(dict2)  
                 
-    #msg = json.dump(l)
-    msg = "HI"
+    msg = json.dumps(dict2)
+    #msg = "HI"
     conn.send(msg.encode(FORMAT))
+
 
 def handle_broker(conn, addr):
 

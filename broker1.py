@@ -4,6 +4,11 @@ import threading
 import json
 import os
 import shutil
+import random
+from datetime import datetime
+import time
+from collections import OrderedDict
+
 
 IP = socket.gethostbyname(socket.gethostname())
 PORT = 5566
@@ -28,52 +33,65 @@ def handle_producer(conn, addr):
     
 
     for item in data.keys():
+        #partitoning
 
         #check if topic exists, only then write topic
         # with open('topics.txt','a+') as f: #global list of topics
         #     f.write(str([]))
         #     lst=f.read()
         #     lst=list(lst)
-        #     if item not in lst
-
+        #     if item not in lst:
         #         lst.append(item)
         #     f.write(str(lst))
         
             # os.mkdir("Topics")
             # y = "Topics/" + item
+        #PARTITIONING
         if not os.path.exists('brokera/'+item):
             os.mkdir('brokera/'+item)
-            ##os.mkdir(item)
-    
-    #PARTITIONING: writing each message to a different file in the topic
-    i = 0
-    while os.path.exists("d%s" % i):
-        i += 1
-        for key, value in data.items():
-            x="brokera/"+key+"/d"+str(i)
-            with open(x, 'a') as f:
-                f.write(str(value))
+            f1=open('brokera/'+item+'/d1','w')
+            f2=open('brokera/'+item+'/d2','w')
+            f3=open('brokera/'+item+'/d3','w')
+
+    dict1 ={}
+####################
+    for key, value in data.items():
+        i=random.randint(1,3)
+        
+
+        x='brokera/'+key+'/d'+str(i)
+        print(x)
+        with open(x, 'r') as f:
+            print("inside with1")
+            v=f.read()
+            print(v)
+            if(v==''):
+                pass
+            else:
+                dict1=json.loads(v)
+                timestamp=str((datetime.now().strftime('%H:%M:%S')))
+                dict1[timestamp]=value
+            print(dict1)
+        with open(x,'w') as f:
+            if(v==''):
+                timestamp=str((datetime.now().strftime('%H:%M:%S')))
+                dict1[timestamp]=value
+                y=json.dumps(dict1)
+            else:
+                print("inside with2")
+                y=json.dumps(dict1)
+            f.write(y)
     
 
-
-    # for key, value in data.items():
-    #     x="brokera/"+key+"/d"
-    #     with open(x, 'a') as f:
-    #         f.write(str(value))
-    
     #REPLICATION
-
     if os.path.exists('brokerb'):
         shutil.rmtree('brokerb')
-    if os.path.exists('brokerc'):
-        shutil.rmtree('brokerc')
 
     src=r"brokera"
     dest1=r"brokerb"
-    dest2=r"brokerc"
     
     shutil.copytree(src,dest1)
-    shutil.copytree(src,dest2)   
+      
 
 
 
@@ -82,51 +100,169 @@ def handle_consumer(conn, addr):
     msg = "I reached consumer function"
     conn.send(msg.encode(FORMAT))
 
-    topic = conn.recv(SIZE).decode(FORMAT)
-    print(f"[{addr}] {topic}")
+    detail = conn.recv(SIZE).decode(FORMAT)
+    detail = json.loads(detail)
+    print("hi")
+    # msg = "OK"
+    # conn.send(msg.encode(FORMAT))
+
+    print(f"[{addr}] {detail}")
     
-    # with open('topics.txt','a+') as f: #global list of topics
-    #     f.write(str([]))
-    #     lst=f.read()
-    #     lst=list(lst)
-    #     if topic not in lst:
-    #         lst.append(topic)
-    #     f.write(str(lst))
-    #if topic doesnt exist, create one
-    if not os.path.exists("brokera/"+topic):
-        os.mkdir("brokera/"+topic)
-        i = 0
-        while os.path.exists("d%s" % i):
-            i += 1
-        x="brokera/"+topic+"/d"+str(i)
-        value=" "
-        with open(x, 'a') as f:
-            f.write(value)
+    for key, value in detail.items():
+        topic = key
+        flag = value[1]
+        timestamp1 = value[0]
     
-        #REPLICATION
-        if os.path.exists('brokerb'):
-            shutil.rmtree('brokerb')
-        if os.path.exists('brokerc'):
-            shutil.rmtree('brokerc')
+    if (flag == 1): 
+        # if not os.path.exists("brokera/"+topic):
+        #     os.mkdir("brokera/"+topic)
+        #     x="brokera/"+topic+"/d"+str(i)
+        #     value=" "
+        #     with open(x, 'a') as f:
+        #         f.write(value)
+        print("entered")
+        if not os.path.exists('brokera/'+topic):
+            print("entered if")
+            os.mkdir('brokera/'+topic)
+            f1=open('brokera/'+topic+'/d1','w') 
+            f2=open('brokera/'+topic+'/d2','w')
+            f3=open('brokera/'+topic+'/d3','w')
 
-        src=r"brokera"
-        dest1=r"brokerb"
-        dest2=r"brokerc"
+            #REPLICATION
+            if os.path.exists('brokerb'):
+                shutil.rmtree('brokerb')
+            if os.path.exists('brokerc'):
+                shutil.rmtree('brokerc')
 
-        shutil.copytree(src,dest1)
-        shutil.copytree(src,dest2) 
+            src=r"brokera"
+            dest1=r"brokerb"
+            dest2=r"brokerc"
 
+            shutil.copytree(src,dest1)
+            shutil.copytree(src,dest2) 
 
-    for filename in os.listdir("brokera"):
-        f1=os.path.join("brokera",filename)
-        if os.path.isfile(f1):
-            #x="brokera/"+topic+"/d"
-            with open(f1, 'a') as f:
-                f.write('')
-            with open(f1, 'r') as f:
+        dict1={}
+        for i in range(1,4):
+            print("entered for")
+            x="brokera/"+topic+"/d"+str(i)
+            # with open(x, 'a') as f:
+            #     f.write('')
+            with open(x, 'r') as f:
+                print("entered with")
+                print("before")
                 res=f.read()
-                conn.send(res.encode(FORMAT))
-                    
+                if (res==''):
+                    pass
+                    print("here")
+                else: 
+                    print("there")  
+                #print(type(res))
+                    y=json.loads(res)
+                    print(y)
+                    dict1.update(y)
+        dict1 = json.dumps(dict1)
+        conn.send(dict1.encode(FORMAT))
+
+    else:
+        # if not os.path.exists("brokera/"+topic):
+        #     os.mkdir("brokera/"+topic)
+        #     x="brokera/"+topic+"/d"+str(i)
+        #     value=" "
+        #     with open(x, 'a') as f:
+        #         f.write(value)
+        print("entered")
+        if not os.path.exists('brokera/'+topic):
+            print("entered if")
+            os.mkdir('brokera/'+topic)
+            f1=open('brokera/'+topic+'/d1','w') 
+            f2=open('brokera/'+topic+'/d2','w')
+            f3=open('brokera/'+topic+'/d3','w')
+
+            #REPLICATION
+            if os.path.exists('brokerb'):
+                shutil.rmtree('brokerb')
+            if os.path.exists('brokerc'):
+                shutil.rmtree('brokerc')
+
+            src=r"brokera"
+            dest1=r"brokerb"
+            dest2=r"brokerc"
+
+            shutil.copytree(src,dest1)
+            shutil.copytree(src,dest2) 
+
+        dict1={}
+        for i in range(1,4):
+            print("entered for")
+            x="brokera/"+topic+"/d"+str(i)
+            # with open(x, 'a') as f:
+            #     f.write('')
+            with open(x, 'r') as f:
+                print("entered with")
+                print("before")
+                res=f.read()
+                if (res==''):
+                    pass
+                    print("here")
+                else: 
+                    print("there")  
+                #print(type(res))
+                    y=json.loads(res)
+                    print(y)
+                    dict1.update(y)
+
+
+    
+        dict2 = OrderedDict(sorted(dict1.items()))
+        #dict4 = dict2
+        # print(dict2)
+        #dict1 = dict(sorted(key=lambda x:time.mktime(time.strptime(x['timestamp'], '%H:%M:%S'))))
+        #dict1= dict(sorted(final.items(), key=lambda item: item[0])) 
+        #print(dict2)
+        #timestamp1= str((datetime.now().strftime('%H:%M:%S')))
+        dict3 = {}
+        for key, value in dict2.items():
+            if key>timestamp1:
+                dict3[key] = value
+
+        print(dict3)
+        dict4 = json.dumps(dict3)
+        conn.send(dict4.encode(FORMAT))
+
+        # else:
+        #     timestamp=str((datetime.now().strftime('%H:%M:%S')))
+        #     for file in os.listdir('brokera'):
+                
+
+
+
+
+            
+def logs():
+    path="/"
+
+    obj=os.scandir()
+
+    print("Files and Directories in '%s'" % path)
+
+    for entry in obj:
+        if entry.is_dir():
+        #print(entry.name)
+            ti_c=os.path.getctime(entry.name)
+            c_ti=time.ctime(ti_c)
+            #print(c_ti)
+            dict={}
+            file1 = open("logs.txt", "a")
+            dict[entry.name]=c_ti
+            file1.write(str((datetime.now().strftime('%H:%M:%S'+'\n'))))
+            file1.write(str(path+'\n'))
+            file1.write(str(dict))
+        #file1.write(str(producer.data))      
+
+def handle_zookeeper(conn, addr):
+    msg = "3"
+    conn.send(msg.encode(FORMAT))
+            
 
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
@@ -140,6 +276,9 @@ def handle_client(conn, addr):
 
         if(check == "2"):
             handle_consumer(conn, addr)
+
+        if(check == "3"):
+            handle_zookeeper(conn, addr)
     conn.close()
         
 
@@ -155,6 +294,7 @@ def main():
         thread = threading.Thread(target=handle_client, args=(conn, addr))
         thread.start()
         print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+        logs()
 
 if __name__ == "__main__":
     main()
